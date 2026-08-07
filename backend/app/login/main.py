@@ -1,12 +1,19 @@
 import uvicorn
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from config import db
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await db.create_all()
 
-router = APIRouter()
+    yield
 
-@router.get('/')
-async def home():
-    return 'Welcome Home'
+    # Shutdown
+    await db.close()
 
-app.include_router(router)
+app = FastAPI(lifespan=lifespan)
+
+def start():
+    uvicorn.run("main:app", host="localhost", port=8888, reload=True)
